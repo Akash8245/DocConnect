@@ -117,16 +117,121 @@ exports.getUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    res.json({
+    // Create response object with common fields
+    const responseUser = {
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
-      specialization: user.specialization,
-      profilePicture: user.profilePicture
-    });
+      profilePicture: user.profilePicture || '',
+      phone: user.phone || '',
+      dateOfBirth: user.dateOfBirth || '',
+      gender: user.gender || '',
+      address: user.address || '',
+      about: user.about || ''
+    };
+    
+    // Add role-specific fields to response
+    if (user.role === 'patient') {
+      responseUser.emergencyContact = user.emergencyContact || '';
+      responseUser.medicalHistory = user.medicalHistory || '';
+      responseUser.allergies = user.allergies || '';
+      responseUser.currentMedications = user.currentMedications || '';
+    } else if (user.role === 'doctor') {
+      responseUser.specialization = user.specialization || '';
+      responseUser.qualifications = user.qualifications || '';
+      responseUser.experience = user.experience || '';
+      responseUser.licenses = user.licenses || '';
+      responseUser.languages = user.languages || '';
+      responseUser.consultationFees = user.consultationFees || '';
+      responseUser.hospitals = user.hospitals || '';
+      responseUser.awards = user.awards || '';
+    }
+    
+    res.json(responseUser);
   } catch (error) {
     console.error('Get user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+exports.updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Update common fields
+    if (req.body.name) user.name = req.body.name;
+    if (req.body.email) user.email = req.body.email;
+    if (req.body.profilePicture) user.profilePicture = req.body.profilePicture;
+    if (req.body.phone !== undefined) user.phone = req.body.phone;
+    if (req.body.dateOfBirth !== undefined) user.dateOfBirth = req.body.dateOfBirth;
+    if (req.body.gender !== undefined) user.gender = req.body.gender;
+    if (req.body.address !== undefined) user.address = req.body.address;
+    if (req.body.about !== undefined) user.about = req.body.about;
+    
+    // Update patient specific fields
+    if (user.role === 'patient') {
+      if (req.body.emergencyContact !== undefined) user.emergencyContact = req.body.emergencyContact;
+      if (req.body.medicalHistory !== undefined) user.medicalHistory = req.body.medicalHistory;
+      if (req.body.allergies !== undefined) user.allergies = req.body.allergies;
+      if (req.body.currentMedications !== undefined) user.currentMedications = req.body.currentMedications;
+    }
+    
+    // Update doctor specific fields
+    if (user.role === 'doctor') {
+      if (req.body.specialization) user.specialization = req.body.specialization;
+      if (req.body.qualifications !== undefined) user.qualifications = req.body.qualifications;
+      if (req.body.experience !== undefined) user.experience = req.body.experience;
+      if (req.body.licenses !== undefined) user.licenses = req.body.licenses;
+      if (req.body.languages !== undefined) user.languages = req.body.languages;
+      if (req.body.consultationFees !== undefined) user.consultationFees = req.body.consultationFees;
+      if (req.body.hospitals !== undefined) user.hospitals = req.body.hospitals;
+      if (req.body.awards !== undefined) user.awards = req.body.awards;
+    }
+    
+    await user.save();
+    
+    // Create response object with all fields
+    const responseUser = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profilePicture: user.profilePicture || '',
+      phone: user.phone || '',
+      dateOfBirth: user.dateOfBirth || '',
+      gender: user.gender || '',
+      address: user.address || '',
+      about: user.about || ''
+    };
+    
+    // Add role-specific fields to response
+    if (user.role === 'patient') {
+      responseUser.emergencyContact = user.emergencyContact || '';
+      responseUser.medicalHistory = user.medicalHistory || '';
+      responseUser.allergies = user.allergies || '';
+      responseUser.currentMedications = user.currentMedications || '';
+    } else if (user.role === 'doctor') {
+      responseUser.specialization = user.specialization || '';
+      responseUser.qualifications = user.qualifications || '';
+      responseUser.experience = user.experience || '';
+      responseUser.licenses = user.licenses || '';
+      responseUser.languages = user.languages || '';
+      responseUser.consultationFees = user.consultationFees || '';
+      responseUser.hospitals = user.hospitals || '';
+      responseUser.awards = user.awards || '';
+    }
+    
+    res.json(responseUser);
+  } catch (error) {
+    console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 }; 

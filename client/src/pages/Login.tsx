@@ -71,36 +71,6 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = async (role: 'patient' | 'doctor') => {
-    setError('');
-    setIsLoading(true);
-    
-    try {
-      // Demo credentials
-      const demoCredentials = {
-        patient: { email: 'test@example.com', password: 'password123' },
-        doctor: { email: 'testdoctor@example.com', password: 'password123' }
-      };
-      
-      const { email, password } = demoCredentials[role];
-      console.log(`Attempting demo login as ${role}:`, { email });
-      
-      const userData = await login(email, password);
-      console.log('Demo login successful:', { role: userData.role });
-      
-      // Store the appropriate redirect path
-      if (userData && userData.role) {
-        const redirectPath = `/${userData.role}/dashboard`;
-        localStorage.setItem('pendingRedirect', redirectPath);
-      }
-    } catch (err: any) {
-      console.error('Demo login error:', err);
-      setError('Demo login failed. Please try again or use regular login.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
@@ -195,36 +165,6 @@ const Login: React.FC = () => {
             </button>
           </div>
         </form>
-        
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or try a demo account</span>
-            </div>
-          </div>
-
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <button
-              onClick={() => handleDemoLogin('patient')}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70"
-            >
-              <FaUser className="mr-2" />
-              Patient Demo
-            </button>
-            <button
-              onClick={() => handleDemoLogin('doctor')}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70"
-            >
-              <FaUserMd className="mr-2" />
-              Doctor Demo
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

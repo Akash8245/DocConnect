@@ -14,6 +14,7 @@ const PatientDashboard = lazy(() => import('./pages/patient/Dashboard'));
 const DoctorDashboard = lazy(() => import('./pages/doctor/Dashboard'));
 const PatientAppointments = lazy(() => import('./pages/patient/Appointments'));
 const DoctorAppointments = lazy(() => import('./pages/doctor/Appointments'));
+const PatientProfile = lazy(() => import('./pages/patient/Profile'));
 const DoctorProfile = lazy(() => import('./pages/doctor/Profile'));
 const DoctorAvailability = lazy(() => import('./pages/doctor/Availability'));
 const BookAppointmentPage = lazy(() => import('./pages/patient/BookAppointment'));
@@ -116,6 +117,11 @@ const AppRouter = () => {
           <Route path="patient/booking" element={
             <ProtectedRoute requiredRole="patient">
               <BookAppointmentPage />
+            </ProtectedRoute>
+          } />
+          <Route path="patient/profile" element={
+            <ProtectedRoute requiredRole="patient">
+              <PatientProfile />
             </ProtectedRoute>
           } />
           

@@ -10,6 +10,7 @@ export interface User {
   role: 'patient' | 'doctor' | 'admin';
   token?: string;
   specialization?: string;
+  profilePicture?: string;
 }
 
 // Signup data interface
@@ -24,12 +25,14 @@ interface SignupData {
 // Auth context type
 interface AuthContextType {
   user: User | null;
+  token?: string | null;
   loading: boolean;
   initialized: boolean;
   login: (email: string, password: string) => Promise<User>;
   signup: (data: SignupData) => Promise<User>;
   logout: () => void;
   checkAuthStatus: () => Promise<User | null>;
+  updateUser: (updatedUser: User) => void;
 }
 
 // Export AuthContext as a named export
@@ -43,6 +46,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const token = localStorage.getItem('token');
 
   // Initial auth check on mount
   useEffect(() => {
@@ -185,14 +189,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
+  // Update user information (for profile updates)
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    // Also update localStorage
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   const value = {
     user,
+    token,
     loading,
     initialized,
     login,
     signup,
     logout,
-    checkAuthStatus
+    checkAuthStatus,
+    updateUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

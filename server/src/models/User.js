@@ -35,19 +35,92 @@ const UserSchema = new mongoose.Schema({
   },
   profilePicture: {
     type: String,
-    default: function() {
-      return this.role === 'doctor' 
-        ? 'https://randomuser.me/api/portraits/men/42.jpg' 
-        : 'https://randomuser.me/api/portraits/women/32.jpg';
-    }
+    default: ''
+  },
+  // Additional fields for patient profiles
+  phone: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  dateOfBirth: {
+    type: String,
+    default: ''
+  },
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Other', 'Prefer not to say', ''],
+    default: ''
+  },
+  address: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  emergencyContact: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  medicalHistory: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  allergies: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  currentMedications: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  // Additional fields for doctor profiles
+  qualifications: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  experience: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  licenses: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  languages: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  consultationFees: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  hospitals: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  awards: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  about: {
+    type: String,
+    trim: true,
+    default: ''
   },
   createdAt: {
     type: Date,
     default: Date.now
-  },
-  about: {
-    type: String,
-    trim: true
   }
 }, {
   timestamps: true

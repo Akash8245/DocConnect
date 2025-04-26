@@ -651,7 +651,7 @@ const BookingPage = () => {
                 <div className="bg-secondary-50 px-5 py-3">
                   <div className="flex justify-between text-sm">
                     <span className="font-medium text-secondary-700">Consultation Fee:</span>
-                    <span className="font-medium text-secondary-900">$50.00</span>
+                    <span className="font-medium text-secondary-900">₹399</span>
                   </div>
                 </div>
               </div>
@@ -749,7 +749,7 @@ const BookingPage = () => {
                             Processing...
                           </span>
                         ) : (
-                          'Confirm & Pay $50.00'
+                          'Confirm & Pay ₹399'
                         )}
                       </button>
                       

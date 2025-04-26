@@ -1,12 +1,209 @@
 import { Link } from 'react-router-dom';
-import { ArrowRightIcon, CalendarIcon, VideoCameraIcon, UserGroupIcon, ClockIcon, GlobeAltIcon, ShieldCheckIcon, UserIcon } from '@heroicons/react/24/outline';
+import { ArrowRightIcon, CalendarIcon, VideoCameraIcon, UserGroupIcon, ClockIcon, GlobeAltIcon, ShieldCheckIcon, UserIcon, Bars3Icon, XMarkIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
+import { useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 const Home = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const authContext = useContext(AuthContext);
+  const user = authContext?.user;
+
+  const handleLogout = () => {
+    authContext?.logout?.();
+    // No need to navigate since we're already on the home page
+  };
+
   return (
     <div className="min-h-screen bg-white overflow-hidden">
+      {/* Navigation Bar */}
+      <div className="fixed top-0 left-0 w-full z-50 bg-white border-b border-secondary-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            {/* Logo */}
+            <Link to="/" className="flex-shrink-0">
+              <span className="text-2xl font-bold text-primary-600">DocConnect</span>
+            </Link>
+            
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-4">
+              <Link
+                to="/ai-health-assistant"
+                className="text-secondary-700 hover:text-primary-700 px-3 py-2 rounded-md text-sm font-medium flex items-center"
+              >
+                <SparklesIcon className="h-5 w-5 mr-1" />
+                AI Health
+              </Link>
+              
+              {user ? (
+                <>
+                  <Link
+                    to={`/${user.role}/dashboard`}
+                    className="text-secondary-700 hover:text-primary-700 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Dashboard
+                  </Link>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      className="flex items-center max-w-xs rounded-full text-sm focus:outline-none"
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    >
+                      <span className="sr-only">Open user menu</span>
+                      <img
+                        className="h-8 w-8 rounded-full object-cover"
+                        src={user.profilePicture || `https://ui-avatars.com/api/?name=${user.name}&background=0D8ABC&color=fff`}
+                        alt={user.name}
+                      />
+                      <span className="ml-2 text-secondary-700">{user.name}</span>
+                      <svg
+                        className={`ml-1 h-5 w-5 text-secondary-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`}
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                    {userMenuOpen && (
+                      <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
+                        <Link
+                          to={`/${user.role}/profile`}
+                          className="block px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          Your Profile
+                        </Link>
+                        <button
+                          onClick={() => {
+                            handleLogout();
+                            setUserMenuOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100"
+                        >
+                          Sign out
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Link 
+                    to="/login"
+                    className="bg-white hover:bg-secondary-50 text-secondary-700 px-4 py-2 rounded-md text-sm font-medium border border-secondary-300"
+                  >
+                    Log in
+                  </Link>
+                  <Link 
+                    to="/signup"
+                    className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
+            
+            {/* Mobile menu button */}
+            <div className="md:hidden">
+              <button
+                type="button"
+                className="inline-flex items-center justify-center p-2 rounded-md text-secondary-500 hover:text-secondary-700 hover:bg-secondary-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <span className="sr-only">Open main menu</span>
+                <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden absolute top-0 inset-x-0 min-h-screen bg-white z-50">
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <Link to="/" className="flex-shrink-0">
+                  <span className="text-2xl font-bold text-primary-600">DocConnect</span>
+                </Link>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center p-2 rounded-md text-secondary-500 hover:text-secondary-700 hover:bg-secondary-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="sr-only">Close menu</span>
+                  <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                </button>
+              </div>
+              <div className="mt-6 space-y-4">
+                <Link 
+                  to="/ai-health-assistant" 
+                  className="flex items-center px-4 py-3 rounded-md text-base font-medium text-secondary-700 hover:bg-secondary-100 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <SparklesIcon className="h-5 w-5 mr-2" />
+                  AI Health
+                </Link>
+                
+                {user ? (
+                  <>
+                    <Link 
+                      to={`/${user.role}/dashboard`} 
+                      className="flex items-center px-4 py-3 rounded-md text-base font-medium text-secondary-700 hover:bg-secondary-100 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link 
+                      to={`/${user.role}/profile`} 
+                      className="flex items-center px-4 py-3 rounded-md text-base font-medium text-secondary-700 hover:bg-secondary-100 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Your Profile
+                    </Link>
+                    <div className="pt-4 mt-4 border-t border-secondary-200">
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full flex items-center px-4 py-3 rounded-md text-base font-medium text-secondary-700 hover:bg-secondary-100 transition-colors"
+                      >
+                        Sign out
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="pt-4 mt-4 border-t border-secondary-200">
+                    <Link 
+                      to="/login" 
+                      className="block px-4 py-3 rounded-md text-base font-medium text-secondary-700 border border-secondary-300 hover:bg-secondary-100 mb-3 text-center"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Log In
+                    </Link>
+                    <Link 
+                      to="/signup" 
+                      className="block px-4 py-3 rounded-md text-base font-medium text-white bg-primary-600 hover:bg-primary-700 text-center"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      
       {/* Hero Section - completely redesigned */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-secondary-950 via-secondary-900 to-primary-900">
+      <div className="relative overflow-hidden bg-gradient-to-b from-secondary-950 via-secondary-900 to-primary-900 mb-20 pt-16">
         {/* Gradient overlays and effects */}
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')] bg-cover bg-center opacity-10"></div>
         <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:3rem_3rem]"></div>
@@ -157,15 +354,15 @@ const Home = () => {
         </div>
         
         {/* Bottom wave decoration */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-auto">
-            <path fill="#f8fafc" fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,229.3C672,224,768,192,864,165.3C960,139,1056,117,1152,128C1248,139,1344,181,1392,202.7L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+        <div className="absolute -bottom-12 left-0 right-0">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 355" className="w-full h-auto">
+            <path fill="#f8fafc" fillOpacity="1" d="M0,160L48,165.3C96,171,192,181,288,181.3C384,181,480,171,576,170.7C672,171,768,181,864,181.3C960,181,1056,171,1152,170.7C1248,171,1344,181,1392,186.7L1440,192L1440,355L1392,355C1344,355,1248,355,1152,355C1056,355,960,355,864,355C768,355,672,355,576,355C480,355,384,355,288,355C192,355,96,355,48,355L0,355Z"></path>
           </svg>
         </div>
       </div>
 
       {/* Global service section */}
-      <div className="bg-secondary-50 py-10">
+      <div className="bg-secondary-50 py-10 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap justify-center gap-8 md:gap-12">
             <div className="flex items-center space-x-2">
@@ -368,7 +565,7 @@ const Home = () => {
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-400 rounded-full opacity-20 mix-blend-overlay blur-3xl"></div>
           <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-primary-300 rounded-full opacity-20 mix-blend-overlay blur-3xl"></div>
           <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 320" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path fillOpacity="0.07" fill="#FFFFFF" d="M0,224L60,202.7C120,181,240,139,360,149.3C480,160,600,224,720,213.3C840,203,960,117,1080,90.7C1200,64,1320,96,1380,112L1440,128L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"></path>
+            <path fillOpacity="0.07" fill="#FFFFFF" d="M0,224L60,202.7C120,181,240,139,360,149.3C480,160,600,224,720,213.3C840,203,960,117,1080,90.7C1200,64,1320,96,1380,112L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
           </svg>
         </div>
 
@@ -745,7 +942,7 @@ const Home = () => {
                   <svg className="h-6 w-6 mr-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
-                  <span>+1 (555) 123-4567</span>
+                  <span>+91 9876543210</span>
                 </p>
                 <div className="pt-4">
                   <h4 className="text-white font-medium mb-2">Subscribe to our newsletter</h4>

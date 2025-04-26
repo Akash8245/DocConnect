@@ -1,5 +1,5 @@
 const express = require('express');
-const { signup, login, getUser } = require('../controllers/authController');
+const { signup, login, getUser, updateProfile } = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
@@ -12,6 +12,9 @@ router.post('/login', login);
 
 // Get logged in user (protected route)
 router.get('/user', protect, getUser);
+
+// Update user profile (protected route)
+router.put('/profile', protect, updateProfile);
 
 // Verify token
 router.get('/verify', protect, (req, res) => {
