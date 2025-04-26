@@ -7,15 +7,12 @@ module.exports = (io) => {
   io.on('connection', (socket) => {
     console.log('New user connected:', socket.id);
 
-    // User joins with their ID
-    socket.on('userJoined', ({ userId }) => {
-      users[socket.id] = userId;
-      console.log(`User ${userId} mapped to socket ${socket.id}`);
-    });
-
     // User joins a room for video call
     socket.on('joinRoom', ({ roomId, userId }) => {
-      console.log(`User ${userId} joining room ${roomId}`);
+      console.log(`User ${userId} joining room ${roomId} with socket ${socket.id}`);
+      
+      // Store user ID mapping
+      users[socket.id] = userId;
       
       // Join the room
       socket.join(roomId);
@@ -25,43 +22,83 @@ module.exports = (io) => {
         rooms[roomId] = [];
       }
       
-      // Add user to the room
-      rooms[roomId].push({
-        socketId: socket.id,
-        userId
-      });
+      // Add user to the room if not already there
+      // For same-device testing, we need to handle multiple connections for the same userId
+      let existingUser = rooms[roomId].find(user => 
+        user.socketId === socket.id
+      );
       
-      // Notify other users in the room
-      const usersInRoom = rooms[roomId].filter(user => user.socketId !== socket.id);
-      socket.emit('roomUsers', usersInRoom);
+      if (!existingUser) {
+        rooms[roomId].push({
+          socketId: socket.id,
+          userId
+        });
+        
+        console.log(`Added user ${userId} with socket ${socket.id} to room ${roomId}`);
+      }
+      
+      // Notify the user about other users in the room
+      // For same-device testing, we need to exclude the current socket, not just the userId
+      const otherUsers = rooms[roomId].filter(user => user.socketId !== socket.id);
+      socket.emit('roomUsers', otherUsers);
+      
+      console.log(`Room ${roomId} users: ${JSON.stringify(rooms[roomId])}`);
       
       // Notify the room that a new user joined
       socket.to(roomId).emit('userJoinedRoom', {
         socketId: socket.id,
         userId
       });
+      
+      // Retry notification after a short delay to handle race conditions
+      setTimeout(() => {
+        socket.to(roomId).emit('userJoinedRoom', {
+          socketId: socket.id,
+          userId
+        });
+      }, 1000);
     });
 
     // WebRTC signaling: Offer
-    socket.on('sendOffer', ({ offer, to, from }) => {
-      console.log(`Sending offer from ${from} to ${to}`);
-      io.to(to).emit('receiveOffer', {
-        offer,
-        from: socket.id
+    socket.on('sendOffer', ({ roomId, offer, from }) => {
+      console.log(`Received offer from ${from} (socket: ${socket.id}) in room ${roomId}`);
+      
+      // Find other users in the room to send the offer to
+      const otherUsers = rooms[roomId]?.filter(user => user.socketId !== socket.id) || [];
+      
+      if (otherUsers.length === 0) {
+        console.log(`No other users in room ${roomId} to send offer to`);
+        return;
+      }
+      
+      // Log all users in the room for debugging
+      console.log(`Room ${roomId} has users: ${JSON.stringify(rooms[roomId])}`);
+      
+      // For simplicity in 1:1 calls, send to all other users (helps with same-device testing)
+      otherUsers.forEach(targetUser => {
+        console.log(`Sending offer to ${targetUser.userId} (socket: ${targetUser.socketId})`);
+        
+        io.to(targetUser.socketId).emit('receiveOffer', {
+          offer,
+          from: socket.id
+        });
       });
     });
 
     // WebRTC signaling: Answer
-    socket.on('sendAnswer', ({ answer, to, from }) => {
-      console.log(`Sending answer from ${from} to ${to}`);
+    socket.on('sendAnswer', ({ roomId, signal, from, to }) => {
+      console.log(`Received answer from ${from} (socket: ${socket.id}) to ${to}`);
+      
       io.to(to).emit('receiveAnswer', {
-        answer,
+        answer: signal,
         from: socket.id
       });
     });
 
     // WebRTC signaling: ICE candidate
-    socket.on('sendIceCandidate', ({ candidate, to, from }) => {
+    socket.on('sendIceCandidate', ({ roomId, candidate, from, to }) => {
+      console.log(`Received ICE candidate from ${from} for ${to}`);
+      
       io.to(to).emit('receiveIceCandidate', {
         candidate,
         from: socket.id
@@ -71,24 +108,7 @@ module.exports = (io) => {
     // User leaves a room
     socket.on('leaveRoom', ({ roomId, userId }) => {
       console.log(`User ${userId} leaving room ${roomId}`);
-      
-      // Remove user from the room
-      if (rooms[roomId]) {
-        rooms[roomId] = rooms[roomId].filter(user => user.socketId !== socket.id);
-        
-        // Clean up empty rooms
-        if (rooms[roomId].length === 0) {
-          delete rooms[roomId];
-        } else {
-          // Notify others that user has left
-          socket.to(roomId).emit('userLeftRoom', {
-            socketId: socket.id,
-            userId
-          });
-        }
-      }
-      
-      socket.leave(roomId);
+      handleUserLeaving(socket, roomId, userId);
     });
 
     // User disconnects
@@ -96,31 +116,46 @@ module.exports = (io) => {
       const userId = users[socket.id];
       console.log(`User disconnected: ${userId || socket.id}`);
       
-      // Clean up user from all rooms
+      // Find all rooms this user is in and remove them
       Object.keys(rooms).forEach(roomId => {
-        if (rooms[roomId]) {
-          const userInRoom = rooms[roomId].find(user => user.socketId === socket.id);
-          
-          if (userInRoom) {
-            // Remove user from room
-            rooms[roomId] = rooms[roomId].filter(user => user.socketId !== socket.id);
-            
-            // Notify others that user has left
-            socket.to(roomId).emit('userLeftRoom', {
-              socketId: socket.id,
-              userId: userInRoom.userId
-            });
-            
-            // Clean up empty rooms
-            if (rooms[roomId].length === 0) {
-              delete rooms[roomId];
-            }
-          }
-        }
+        handleUserLeaving(socket, roomId, userId);
       });
       
       // Remove user from users list
       delete users[socket.id];
     });
+    
+    // Helper function to handle a user leaving
+    function handleUserLeaving(socket, roomId, userId) {
+      if (!rooms[roomId]) return;
+      
+      // Find the user in the room by socket ID (more reliable for same-device testing)
+      const userIndex = rooms[roomId].findIndex(user => user.socketId === socket.id);
+      
+      if (userIndex !== -1) {
+        // Get the user before removing
+        const user = rooms[roomId][userIndex];
+        
+        // Remove user from room
+        rooms[roomId].splice(userIndex, 1);
+        
+        // Leave the socket room
+        socket.leave(roomId);
+        
+        // Notify others that user has left
+        socket.to(roomId).emit('userLeftRoom', {
+          socketId: user.socketId,
+          userId: user.userId
+        });
+        
+        console.log(`User ${user.userId} (socket: ${user.socketId}) left room ${roomId}, ${rooms[roomId].length} users remaining`);
+        
+        // Clean up empty rooms
+        if (rooms[roomId].length === 0) {
+          console.log(`Room ${roomId} is now empty, removing`);
+          delete rooms[roomId];
+        }
+      }
+    }
   });
 }; 

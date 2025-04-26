@@ -1,7 +1,8 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
+import { HelmetProvider } from 'react-helmet-async';
 import SuspenseFallback from './components/SuspenseFallback';
 import Layout from './components/Layout';
 import "./App.css";
@@ -70,6 +71,19 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
   }
   
   return children;
+};
+
+// Video call route wrapper to handle missing ID
+const VideoCallWrapper = () => {
+  const { appointmentId } = useParams();
+  const { user } = useAuth();
+  
+  if (!appointmentId) {
+    // Redirect to the appropriate appointments page if no ID is provided
+    return <Navigate to={`/${user?.role}/appointments`} replace />;
+  }
+  
+  return <VideoCall />;
 };
 
 // Main router component
@@ -153,7 +167,14 @@ const AppRouter = () => {
           {/* Video call route */}
           <Route path="video-call/:appointmentId" element={
             <ProtectedRoute>
-              <VideoCall />
+              <VideoCallWrapper />
+            </ProtectedRoute>
+          } />
+          
+          {/* Catch-all route for video call without ID */}
+          <Route path="video-call" element={
+            <ProtectedRoute>
+              <Navigate to="/dashboard" replace />
             </ProtectedRoute>
           } />
         </Route>
@@ -165,13 +186,15 @@ const AppRouter = () => {
 // Main App component
 const App = () => {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <SocketProvider>
-          <AppRouter />
-        </SocketProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <SocketProvider>
+            <AppRouter />
+          </SocketProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   );
 };
 

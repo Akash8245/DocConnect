@@ -33,6 +33,7 @@ interface AuthContextType {
   logout: () => void;
   checkAuthStatus: () => Promise<User | null>;
   updateUser: (updatedUser: User) => void;
+  error: string | null;
 }
 
 // Export AuthContext as a named export
@@ -46,6 +47,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const token = localStorage.getItem('token');
 
   // Initial auth check on mount
@@ -83,22 +85,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
         
         setUser(authenticatedUser);
+        localStorage.setItem('userId', authenticatedUser.id);
+        localStorage.setItem('name', authenticatedUser.name);
+        localStorage.setItem('role', authenticatedUser.role);
         return authenticatedUser;
       } else {
         // If token verification fails, clean up localStorage
         localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('name');
+        localStorage.removeItem('role');
         return null;
       }
     } catch (error) {
       console.error("Auth verification error:", error);
       localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('name');
+      localStorage.removeItem('role');
       return null;
     }
   };
 
   const login = async (email: string, password: string): Promise<User> => {
+    setLoading(true);
+    setError(null);
+    
     try {
       console.log("Attempting login with:", { email });
       const response = await axios.post('/api/auth/login', { email, password });
@@ -109,7 +121,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         // Save auth data to localStorage
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('userId', userData._id);
+        localStorage.setItem('name', userData.name);
+        localStorage.setItem('role', userData.role);
         
         const authenticatedUser: User = {
           id: userData._id,
@@ -129,13 +143,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error: any) {
       console.error("Login error:", error);
       if (error.response && error.response.data && error.response.data.message) {
-        throw new Error(error.response.data.message);
+        setError(error.response.data.message);
       }
       throw new Error('Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const signup = async (data: SignupData): Promise<User> => {
+    setLoading(true);
+    setError(null);
+    
     try {
       console.log("Attempting signup with:", { email: data.email, role: data.role });
       
@@ -156,7 +175,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
         // Save auth data to localStorage
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('userId', userData._id);
+        localStorage.setItem('name', userData.name);
+        localStorage.setItem('role', userData.role);
         
         const authenticatedUser: User = {
           id: userData._id,
@@ -176,15 +197,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error: any) {
       console.error("Signup error:", error);
       if (error.response && error.response.data && error.response.data.message) {
-        throw new Error(error.response.data.message);
+        setError(error.response.data.message);
       }
       throw new Error('Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('name');
+    localStorage.removeItem('role');
     localStorage.removeItem('pendingRedirect');
     setUser(null);
   };
@@ -193,7 +218,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
     // Also update localStorage
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    localStorage.setItem('userId', updatedUser.id);
+    localStorage.setItem('name', updatedUser.name);
+    localStorage.setItem('role', updatedUser.role);
   };
 
   const value = {
@@ -205,7 +232,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     signup,
     logout,
     checkAuthStatus,
-    updateUser
+    updateUser,
+    error
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

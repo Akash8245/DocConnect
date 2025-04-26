@@ -34,38 +34,36 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
+    
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+    
     try {
-      console.log('Login attempt with:', { email, password: '******' });
+      setIsLoading(true);
+      setError(null);
       
-      if (!email || !password) {
-        throw new Error('Please enter both email and password');
-      }
+      await login(email, password);
       
-      const userData = await login(email, password);
-      console.log('Login successful:', { role: userData.role });
+      // Check if the user ID was properly stored
+      const userId = localStorage.getItem('userId');
+      console.log('After login, user ID in localStorage:', userId);
       
-      // Store redirect path for mobile apps to handle
-      // This will be checked on next app open/reload
-      if (userData && userData.role) {
-        let redirectPath = '';
-        if (userData.role === 'patient') {
-          redirectPath = '/patient/dashboard';
-        } else if (userData.role === 'doctor') {
-          redirectPath = '/doctor/dashboard';
-        } else if (userData.role === 'admin') {
-          redirectPath = '/admin/dashboard';
-        }
-        
-        if (redirectPath) {
-          localStorage.setItem('pendingRedirect', redirectPath);
-        }
+      // Get auth context user data
+      console.log('Auth context user after login:', user);
+      
+      // Redirect based on role
+      if (user?.role === 'patient') {
+        navigate('/patient/dashboard');
+      } else if (user?.role === 'doctor') {
+        navigate('/doctor/dashboard');
+      } else {
+        navigate('/dashboard');
       }
     } catch (err: any) {
-      console.error('Login error details:', err);
-      setError(err.message || 'Login failed. Please try again.');
+      console.error('Login error:', err);
+      setError(err.message || 'Failed to log in. Please try again.');
     } finally {
       setIsLoading(false);
     }
