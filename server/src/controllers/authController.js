@@ -16,25 +16,21 @@ exports.signup = async (req, res) => {
   try {
     const { role } = req.params;
     
-    // Check if role is valid
     if (role !== 'patient' && role !== 'doctor') {
       return res.status(400).json({ message: 'Invalid role' });
     }
     
     const { name, email, password, specialization } = req.body;
     
-    // Check if email already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'Email already in use' });
     }
     
-    // Check if doctor has specialization
     if (role === 'doctor' && !specialization) {
       return res.status(400).json({ message: 'Specialization is required for doctors' });
     }
     
-    // Create new user
     const user = await User.create({
       name,
       email,
@@ -43,10 +39,8 @@ exports.signup = async (req, res) => {
       ...(role === 'doctor' && { specialization })
     });
     
-    // Generate token
     const token = generateToken(user._id);
     
-    // Return user data and token
     res.status(201).json({
       token,
       user: {
@@ -60,7 +54,6 @@ exports.signup = async (req, res) => {
     });
   } catch (error) {
     console.error('Signup error:', error);
-    console.error('Login error:', error);
     res.status(500).json({ 
       error: 'Internal Server Error',
       message: error.message,
@@ -76,23 +69,18 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Check if email and password are provided
     if (!email || !password) {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
     
-    // Find user by email (include password for comparison)
     const user = await User.findOne({ email }).select('+password').orFail(new Error('User not found'));
     
-    // Check if user exists and password is correct
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
-    // Generate token
     const token = generateToken(user._id);
     
-    // Return user data and token
     res.json({
       token,
       user: {
@@ -106,30 +94,25 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    // In login function
-      } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ 
-          error: 'Internal Server Error',
-          message: error.message,
-          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
-      }
-  };
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+};
 
 // @desc    Get logged in user
 // @route   GET /api/auth/user
 // @access  Private
 exports.getUser = async (req, res) => {
   try {
-    // User is attached to req by authMiddleware
     const user = await User.findById(req.user.id);
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Create response object with common fields
     const responseUser = {
       _id: user._id,
       name: user.name,
@@ -143,7 +126,6 @@ exports.getUser = async (req, res) => {
       about: user.about || ''
     };
     
-    // Add role-specific fields to response
     if (user.role === 'patient') {
       responseUser.emergencyContact = user.emergencyContact || '';
       responseUser.medicalHistory = user.medicalHistory || '';
@@ -163,7 +145,6 @@ exports.getUser = async (req, res) => {
     res.json(responseUser);
   } catch (error) {
     console.error('Get user error:', error);
-    console.error('Login error:', error);
     res.status(500).json({ 
       error: 'Internal Server Error',
       message: error.message,
@@ -183,7 +164,6 @@ exports.updateProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Update common fields
     if (req.body.name) user.name = req.body.name;
     if (req.body.email) user.email = req.body.email;
     if (req.body.profilePicture) user.profilePicture = req.body.profilePicture;
@@ -193,7 +173,6 @@ exports.updateProfile = async (req, res) => {
     if (req.body.address !== undefined) user.address = req.body.address;
     if (req.body.about !== undefined) user.about = req.body.about;
     
-    // Update patient specific fields
     if (user.role === 'patient') {
       if (req.body.emergencyContact !== undefined) user.emergencyContact = req.body.emergencyContact;
       if (req.body.medicalHistory !== undefined) user.medicalHistory = req.body.medicalHistory;
@@ -201,7 +180,6 @@ exports.updateProfile = async (req, res) => {
       if (req.body.currentMedications !== undefined) user.currentMedications = req.body.currentMedications;
     }
     
-    // Update doctor specific fields
     if (user.role === 'doctor') {
       if (req.body.specialization) user.specialization = req.body.specialization;
       if (req.body.qualifications !== undefined) user.qualifications = req.body.qualifications;
@@ -215,7 +193,6 @@ exports.updateProfile = async (req, res) => {
     
     await user.save();
     
-    // Create response object with all fields
     const responseUser = {
       _id: user._id,
       name: user.name,
@@ -229,7 +206,6 @@ exports.updateProfile = async (req, res) => {
       about: user.about || ''
     };
     
-    // Add role-specific fields to response
     if (user.role === 'patient') {
       responseUser.emergencyContact = user.emergencyContact || '';
       responseUser.medicalHistory = user.medicalHistory || '';
@@ -249,7 +225,6 @@ exports.updateProfile = async (req, res) => {
     res.json(responseUser);
   } catch (error) {
     console.error('Update profile error:', error);
-    console.error('Login error:', error);
     res.status(500).json({ 
       error: 'Internal Server Error',
       message: error.message,
