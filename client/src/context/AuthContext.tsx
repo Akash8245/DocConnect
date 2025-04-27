@@ -142,10 +142,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (error: any) {
       console.error("Login error:", error);
-      if (error.response && error.response.data && error.response.data.message) {
-        setError(error.response.data.message);
+      if (error.response) {
+        // Server responded with error
+        setError(error.response.data?.message || 'Server error occurred');
+      } else if (error.request) {
+        // Request made but no response
+        setError('Server is unavailable. Please check your connection');
+      } else {
+        // Other errors
+        setError('Login failed. Please check your credentials.');
       }
-      throw new Error('Login failed. Please check your credentials.');
+      throw new Error(error.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -247,4 +254,4 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-export default AuthContext; 
+export default AuthContext;

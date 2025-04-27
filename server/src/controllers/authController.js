@@ -60,7 +60,12 @@ exports.signup = async (req, res) => {
     });
   } catch (error) {
     console.error('Signup error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
@@ -77,7 +82,7 @@ exports.login = async (req, res) => {
     }
     
     // Find user by email (include password for comparison)
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select('+password').orFail(new Error('User not found'));
     
     // Check if user exists and password is correct
     if (!user || !(await user.matchPassword(password))) {
@@ -101,9 +106,16 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
+    // In login function
+      } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ 
+          error: 'Internal Server Error',
+          message: error.message,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+      }
+  };
 
 // @desc    Get logged in user
 // @route   GET /api/auth/user
@@ -151,7 +163,12 @@ exports.getUser = async (req, res) => {
     res.json(responseUser);
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
@@ -232,6 +249,11 @@ exports.updateProfile = async (req, res) => {
     res.json(responseUser);
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
-}; 
+};
