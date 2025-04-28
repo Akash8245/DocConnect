@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    @apply m-0 p-0 overflow-x-hidden;
+  }
+  
+  body {
+    @apply font-sans text-secondary-900 bg-secondary-50;
+  }
+  
+  #root {
+    @apply flex flex-col min-h-screen w-full m-0 p-0 overflow-hidden max-w-none;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer;
+  }
+  
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 disabled:opacity-70 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-white text-secondary-800 border border-secondary-300 hover:bg-secondary-50 focus:ring-primary-500;
+  }
+  
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-md overflow-hidden border border-secondary-200;
+  }
+  
+  .input {
+    @apply block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm placeholder-secondary-400 
+    focus:outline-none focus:ring-primary-500 focus:border-primary-500;
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-secondary-700 mb-1;
+  }
+  
+  .page-container {
+    @apply w-full max-w-full overflow-hidden;
+  }
+}
+
+/* Doctor cards styling */
+.doctor-card {
+  @apply transition-all duration-300 hover:shadow-lg hover:border-primary-300;
+}
+
+/* Calendar styling */
+.calendar-day {
+  @apply cursor-pointer p-2 text-center rounded-md transition-colors;
+}
+
+.calendar-day-available {
+  @apply bg-primary-100 text-primary-800 hover:bg-primary-200;
+}
+
+.calendar-day-unavailable {
+  @apply bg-secondary-100 text-secondary-400;
+}
+
+.calendar-day-selected {
+  @apply bg-primary-600 text-white;
+}
+
+/* Video call styling */
+.video-container {
+  @apply h-full w-full bg-secondary-900 relative overflow-hidden;
+}
+
+.video-local {
+  @apply absolute bottom-4 right-4 w-1/4 rounded-lg overflow-hidden border-2 border-white shadow-lg z-10;
+}
+
+.video-remote {
+  @apply h-full w-full object-cover;
+}
