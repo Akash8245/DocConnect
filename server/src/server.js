@@ -4,13 +4,7 @@ const mongoose = require('mongoose');
 const http = require('http');
 const socketIO = require('socket.io');
 const dotenv = require('dotenv');
-
-// Import routes
-const authRoutes = require('./routes/auth.routes');
-const doctorRoutes = require('./routes/doctor.routes');
-const appointmentRoutes = require('./routes/appointment.routes');
-const videoCallRoutes = require('./routes/videoCall.routes');
-const aiRoutes = require('./routes/ai.routes');
+const path = require('path');
 
 // Load environment variables
 dotenv.config();
@@ -20,7 +14,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server, {
   cors: {
-    origin: "*", // Allow all origins while in development
+    origin: "*",
     methods: ['GET', 'POST']
   }
 });
@@ -32,6 +26,15 @@ app.use(cors({
   credentials: true
 }));
 
+// Serve static files from "public" folder
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Import routes
+const authRoutes = require('./routes/auth.routes');
+const doctorRoutes = require('./routes/doctor.routes');
+const appointmentRoutes = require('./routes/appointment.routes');
+const aiRoutes = require('./routes/ai.routes');
+
 // Debug middleware for auth requests
 app.use('/api/auth', (req, res, next) => {
   console.log('Auth request headers:', req.headers);
@@ -42,28 +45,21 @@ app.use('/api/auth', (req, res, next) => {
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/docconnect';
 console.log('Attempting to connect to MongoDB at:', mongoURI);
 
-// Set a timeout for MongoDB connection to avoid hanging
 const connectWithTimeout = () => {
   const connectionPromise = mongoose.connect(mongoURI);
-  
-  // Set a timeout of 5 seconds
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => {
       reject(new Error('MongoDB connection timeout - continuing without database'));
     }, 5000);
   });
-  
-  // Race the connection against the timeout
   return Promise.race([connectionPromise, timeoutPromise]);
 };
 
-// Attempt connection with timeout
 connectWithTimeout()
   .then(() => console.log('MongoDB Connected'))
   .catch(err => {
     console.error('MongoDB connection error:', err);
     console.log('Using in-memory data storage as fallback. Note: Data will not persist between restarts.');
-    console.log('The AI features will still work without the database.');
   });
 
 // Basic route
@@ -71,15 +67,52 @@ app.get('/', (req, res) => {
   res.send('DocConnect API is running...');
 });
 
-// Mount routes
+// Mount API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
-app.use('/api/video-call', videoCallRoutes);
 app.use('/api/ai', aiRoutes);
 
-// Socket.io for WebRTC signaling
-require('./socket')(io);
+// --------- VC Route (Frontend page) ---------
+app.get('/vc', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'vc.html')); // Ensure you have the vc.html file in the public directory
+});
+
+// --------- Socket.IO for Video Call ---------
+io.on('connection', socket => {
+  console.log('New client connected:', socket.id);
+
+  // When a user joins a room
+  socket.on('join-room', (roomId) => {
+    socket.join(roomId);
+    console.log(`Socket ${socket.id} joined room ${roomId}`);
+    socket.to(roomId).emit('user-joined', socket.id);
+
+    // Handle relay of WebRTC signals (offer/answer/candidate)
+    socket.on('signal', ({ to, data }) => {
+      io.to(to).emit('signal', { from: socket.id, data });
+    });
+
+    // Handle disconnection
+    socket.on('disconnect', () => {
+      console.log(`Socket ${socket.id} disconnected`);
+      socket.to(roomId).emit('user-left', socket.id);
+    });
+  });
+
+  // Handle signaling messages (offer/answer/candidate)
+  socket.on('offer', (to, description) => {
+    socket.to(to).emit('offer', socket.id, description);
+  });
+
+  socket.on('answer', (to, description) => {
+    socket.to(to).emit('answer', socket.id, description);
+  });
+
+  socket.on('candidate', (to, candidate) => {
+    socket.to(to).emit('candidate', socket.id, candidate);
+  });
+});
 
 // 404 Handler
 app.use((req, res) => {
@@ -97,7 +130,6 @@ const PORT = process.env.PORT || 5001;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Access on local network at http://0.0.0.0:${PORT}`);
-  console.log(`For other devices, use the machine's IP address`);
 });
 
 module.exports = { app, server };

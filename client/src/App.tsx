@@ -1,11 +1,12 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { HelmetProvider } from 'react-helmet-async';
 import SuspenseFallback from './components/SuspenseFallback';
 import Layout from './components/Layout';
 import "./App.css";
+import VideoCallPlaceholder from './pages/VideoCallPlaceholder';
 
 // Lazy load pages for better performance
 const Home = lazy(() => import('./pages/Home'));
@@ -19,8 +20,10 @@ const PatientProfile = lazy(() => import('./pages/patient/Profile'));
 const DoctorProfile = lazy(() => import('./pages/doctor/Profile'));
 const DoctorAvailability = lazy(() => import('./pages/doctor/Availability'));
 const BookAppointmentPage = lazy(() => import('./pages/patient/BookAppointment'));
-const VideoCall = lazy(() => import('./pages/VideoCall'));
 const AIHealthAssistant = lazy(() => import('./pages/AIHealthAssistant'));
+
+// 👉 Lazy load your VideoCall page
+const VideoCall = lazy(() => import('./pages/VideoCall'));  // <<---- Added this line
 
 // Component to redirect to the appropriate dashboard based on user role
 const DashboardRedirect = () => {
@@ -71,19 +74,6 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
   }
   
   return children;
-};
-
-// Video call route wrapper to handle missing ID
-const VideoCallWrapper = () => {
-  const { appointmentId } = useParams();
-  const { user } = useAuth();
-  
-  if (!appointmentId) {
-    // Redirect to the appropriate appointments page if no ID is provided
-    return <Navigate to={`/${user?.role}/appointments`} replace />;
-  }
-  
-  return <VideoCall />;
 };
 
 // Main router component
@@ -138,10 +128,7 @@ const AppRouter = () => {
               <PatientProfile />
             </ProtectedRoute>
           } />
-          
-          {/* AI Health Assistant route - accessible to all users */}
-          <Route path="ai-health-assistant" element={<AIHealthAssistant />} />
-          
+
           {/* Doctor routes */}
           <Route path="doctor/dashboard" element={
             <ProtectedRoute requiredRole="doctor">
@@ -163,20 +150,20 @@ const AppRouter = () => {
               <DoctorAvailability />
             </ProtectedRoute>
           } />
-          
-          {/* Video call route */}
-          <Route path="video-call/:appointmentId" element={
+
+          {/* AI Health Assistant route */}
+          <Route path="ai-health-assistant" element={<AIHealthAssistant />} />
+
+          {/* Video Call Placeholder */}
+          <Route path="video-call" element={<VideoCallPlaceholder />} />
+
+          {/* 👉 Real Video Call Route (New) */}
+          <Route path="vc" element={
             <ProtectedRoute>
-              <VideoCallWrapper />
+              <VideoCall />
             </ProtectedRoute>
           } />
           
-          {/* Catch-all route for video call without ID */}
-          <Route path="video-call" element={
-            <ProtectedRoute>
-              <Navigate to="/dashboard" replace />
-            </ProtectedRoute>
-          } />
         </Route>
       </Routes>
     </Suspense>

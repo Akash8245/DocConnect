@@ -129,28 +129,69 @@ const Layout = () => {
                       </Link>
                       
                       {/* User specific navigation links */}
-                      {navLinks.map((item) => (
-                        <Link
-                          key={item.name}
-                          to={item.href}
-                          className={`group flex items-center px-2 py-2 text-base font-medium rounded-md ${
-                            location.pathname.includes(item.href)
-                              ? 'bg-primary-100 text-primary-600'
-                              : 'text-secondary-600 hover:bg-primary-50 hover:text-primary-600'
-                          }`}
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          <item.icon
-                            className={`mr-4 h-6 w-6 flex-shrink-0 ${
-                              location.pathname.includes(item.href)
-                                ? 'text-primary-600'
-                                : 'text-secondary-400 group-hover:text-primary-600'
+                      {user && (
+                        <>
+                          <Link
+                            to={`/${user.role}/dashboard`}
+                            className={`group flex items-center px-2 py-2 text-base font-medium rounded-md ${
+                              location.pathname.includes('/dashboard')
+                                ? 'bg-primary-100 text-primary-600'
+                                : 'text-secondary-600 hover:bg-primary-50 hover:text-primary-600'
                             }`}
-                            aria-hidden="true"
-                          />
-                          {item.name}
-                        </Link>
-                      ))}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <HomeIcon
+                              className={`mr-4 h-6 w-6 flex-shrink-0 ${
+                                location.pathname.includes('/dashboard')
+                                  ? 'text-primary-600'
+                                  : 'text-secondary-400 group-hover:text-primary-600'
+                              }`}
+                              aria-hidden="true"
+                            />
+                            Dashboard
+                          </Link>
+                          
+                          <Link
+                            to={`/${user.role}/appointments`}
+                            className={`group flex items-center px-2 py-2 text-base font-medium rounded-md ${
+                              location.pathname.includes('/appointments')
+                                ? 'bg-primary-100 text-primary-600'
+                                : 'text-secondary-600 hover:bg-primary-50 hover:text-primary-600'
+                            }`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <CalendarIcon
+                              className={`mr-4 h-6 w-6 flex-shrink-0 ${
+                                location.pathname.includes('/appointments')
+                                  ? 'text-primary-600'
+                                  : 'text-secondary-400 group-hover:text-primary-600'
+                              }`}
+                              aria-hidden="true"
+                            />
+                            Appointments
+                          </Link>
+                          
+                          <Link
+                            to={`/${user.role}/profile`}
+                            className={`group flex items-center px-2 py-2 text-base font-medium rounded-md ${
+                              location.pathname.includes('/profile')
+                                ? 'bg-primary-100 text-primary-600'
+                                : 'text-secondary-600 hover:bg-primary-50 hover:text-primary-600'
+                            }`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <UserIcon
+                              className={`mr-4 h-6 w-6 flex-shrink-0 ${
+                                location.pathname.includes('/profile')
+                                  ? 'text-primary-600'
+                                  : 'text-secondary-400 group-hover:text-primary-600'
+                              }`}
+                              aria-hidden="true"
+                            />
+                            Profile
+                          </Link>
+                        </>
+                      )}
                       {user && (
                         <button
                           onClick={() => {

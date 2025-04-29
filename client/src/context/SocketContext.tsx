@@ -7,6 +7,9 @@ import { useAuth } from './AuthContext';
 declare global {
   interface Window {
     localMediaStream?: MediaStream;
+    debugSocketConnection?: () => void;
+    forceSocketReconnect?: () => void;
+    clearPeerConnection?: () => void;
   }
 }
 
@@ -53,37 +56,100 @@ export const SocketProvider = ({ children }: ContextProps) => {
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [usersInRoom, setUsersInRoom] = useState<any[]>([]);
   const [currentRoom, setCurrentRoom] = useState<string | null>(null);
+  const [socketError, setSocketError] = useState<string | null>(null);
   
   const peerRef = useRef<Peer.Instance | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const socketRef = useRef<Socket | null>(null);
   
   // Removed sound-related code to avoid 403 errors
   // We'll implement this in a different way later
   
-  // Initialize socket connection
+  // Initialize socket connection with improved error handling
   useEffect(() => {
     console.log('Initializing socket connection');
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
     console.log('Socket connecting to:', apiUrl);
+    
+    // Cleanup any existing socket
+    if (socketRef.current) {
+      try {
+        socketRef.current.disconnect();
+      } catch (err) {
+        console.error('Error disconnecting existing socket:', err);
+      }
+    }
     
     try {
       const newSocket = io(apiUrl, {
         transports: ['websocket', 'polling'],
         withCredentials: true,
         reconnection: true,
-        reconnectionAttempts: 5,
-        timeout: 10000
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000
       });
+      
+      // Store in ref for debugging access
+      socketRef.current = newSocket;
+
+      // Add socket debug helpers to window
+      window.debugSocketConnection = () => {
+        if (socketRef.current) {
+          console.log('Socket ID:', socketRef.current.id);
+          console.log('Socket connected:', socketRef.current.connected);
+          console.log('Socket namespace:', socketRef.current.nsp);
+          console.log('Socket current room:', currentRoom);
+          console.log('Users in room:', usersInRoom);
+          console.log('Connection status:', connectionStatus);
+          console.log('Local stream:', localStreamRef.current ? 'available' : 'not available');
+          console.log('Remote stream:', remoteStream ? 'available' : 'not available');
+          return 'Socket debug info logged to console';
+        }
+        return 'No socket connection available';
+      };
+      
+      window.forceSocketReconnect = () => {
+        if (socketRef.current) {
+          console.log('Forcing socket reconnect...');
+          socketRef.current.disconnect();
+          socketRef.current.connect();
+          return 'Socket reconnecting...';
+        }
+        return 'No socket to reconnect';
+      };
+      
+      window.clearPeerConnection = () => {
+        cleanupPeerConnection();
+        return 'Peer connection cleared';
+      };
 
       // Immediately setup event handlers to avoid missing messages
       setupSocketListeners(newSocket);
 
       newSocket.on('connect', () => {
         console.log('Socket connected with ID:', newSocket.id);
+        setSocketError(null);
+        
+        // If we were in a room, rejoin it
+        if (currentRoom && user?._id) {
+          console.log(`Rejoining room ${currentRoom} after connection`);
+          newSocket.emit('joinRoom', {
+            roomId: currentRoom,
+            userId: user._id
+          });
+        }
       });
       
       newSocket.on('connect_error', (error) => {
         console.error('Socket connection error:', error);
+        setSocketError(`Connection error: ${error.message}`);
+      });
+      
+      newSocket.on('connect_timeout', () => {
+        console.error('Socket connection timeout');
+        setSocketError('Connection timeout - please check your internet connection');
       });
 
       setSocket(newSocket);
@@ -97,9 +163,15 @@ export const SocketProvider = ({ children }: ContextProps) => {
         } catch (err) {
           console.error('Error disconnecting socket:', err);
         }
+        
+        socketRef.current = null;
+        window.debugSocketConnection = undefined;
+        window.forceSocketReconnect = undefined;
+        window.clearPeerConnection = undefined;
       };
     } catch (err) {
       console.error('Failed to create socket connection:', err);
+      setSocketError(`Failed to create socket: ${err instanceof Error ? err.message : String(err)}`);
       return () => {};
     }
   }, []);
@@ -124,6 +196,25 @@ export const SocketProvider = ({ children }: ContextProps) => {
     socketInstance.on('roomUsers', (users) => {
       console.log('Received room users list:', users);
       setUsersInRoom(users);
+    });
+    
+    // Handle signal errors
+    socketInstance.on('signalError', (error) => {
+      console.error('Signal error:', error);
+      if (error.type === 'room-empty') {
+        // Show specific notification in room but don't change connection state
+        console.log('Room is empty, waiting for others to join');
+      } else {
+        setConnectionStatus('failed');
+      }
+    });
+    
+    // Handle room status updates
+    socketInstance.on('roomStatus', (status) => {
+      console.log('Received room status:', status);
+      if (status.exists && status.userCount > 1) {
+        console.log(`Room exists with ${status.userCount} users`);
+      }
     });
 
     // Handle incoming offers
@@ -503,25 +594,169 @@ export const SocketProvider = ({ children }: ContextProps) => {
     setTimeout(async () => {
       console.log('Starting connection after cleanup');
       
-      // Force reconnection of local media if needed
-      if (!localStreamRef.current) {
-        console.log('No local stream available, initializing...');
-        const stream = await initializeMediaStream();
-        if (stream) {
-          console.log('Local stream initialized, starting call');
-          // Always be the initiator for forced connections
-          startCall(targetSocketId, true);
-        } else {
-          console.error('Failed to initialize media stream for forced connection');
+      if (!socket || !socket.connected) {
+        console.error('Socket not connected! Attempting to reconnect...');
+        if (socketRef.current) {
+          try {
+            socketRef.current.connect();
+            // Wait briefly for reconnection
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } catch (e) {
+            console.error('Failed to reconnect socket:', e);
+          }
         }
-      } else {
-        // Local stream already available, start call immediately
-        console.log('Using existing local stream');
-        startCall(targetSocketId, true);
+        
+        if (!socketRef.current?.connected) {
+          console.error('Still not connected after reconnect attempt');
+          setConnectionStatus('failed');
+          return;
+        }
+      }
+      
+      // Force reconnection of local media if needed
+      let mediaStream = localStreamRef.current;
+      if (!mediaStream) {
+        try {
+          console.log('No local stream available, initializing...');
+          mediaStream = await initializeMediaStream();
+        } catch (err) {
+          console.error('Media initialization failed:', err);
+          // Continue without media in emergency mode
+          console.log('Continuing without media (emergency mode)');
+        }
+      }
+      
+      // Always be the initiator for forced connections
+      console.log('Starting call as initiator with emergency mode if needed');
+      
+      // Create a peer connection even without media as last resort
+      try {
+        // Create a new WebRTC peer connection
+        const peer = new Peer({
+          initiator: true,
+          trickle: true,
+          stream: mediaStream || undefined, // Can be undefined in emergency mode
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:stun2.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' },
+              {
+                urls: 'turn:relay.metered.ca:80',
+                username: 'openrelay',
+                credential: 'openrelay',
+              },
+            ],
+            iceTransportPolicy: 'all',
+            sdpSemantics: 'unified-plan'
+          }
+        });
+        
+        peerRef.current = peer;
+        setConnectionStatus('connecting');
+        
+        // Set a shorter timeout for connection status
+        const failureTimeout = setTimeout(() => {
+          if (connectionStatus === 'connecting') {
+            console.log('Connection still in connecting state after timeout - setting to failed');
+            setConnectionStatus('failed');
+          }
+        }, 15000);
+        
+        // Handle WebRTC signaling
+        peer.on('signal', (data) => {
+          console.log('WebRTC signaling event:', data.type || 'ICE candidate');
+          
+          if (!socket?.connected) {
+            console.error('Socket disconnected during signaling!');
+            return;
+          }
+          
+          if (data.type === 'offer') {
+            console.log('Sending offer to room:', currentRoom);
+            socket.emit('sendOffer', {
+              roomId: currentRoom,
+              offer: data,
+              from: user?._id
+            });
+            
+            // Send multiple times for reliability
+            setTimeout(() => {
+              socket?.emit('sendOffer', {
+                roomId: currentRoom,
+                offer: data,
+                from: user?._id
+              });
+            }, 1000);
+          } else if (data.type === 'answer') {
+            console.log('Sending answer to:', targetSocketId);
+            socket.emit('sendAnswer', {
+              roomId: currentRoom,
+              signal: data,
+              from: user?._id,
+              to: targetSocketId
+            });
+            
+            // Send multiple times for reliability
+            setTimeout(() => {
+              socket?.emit('sendAnswer', {
+                roomId: currentRoom,
+                signal: data,
+                from: user?._id,
+                to: targetSocketId
+              });
+            }, 1000);
+          } else {
+            // This is an ICE candidate
+            console.log('Sending ICE candidate to:', targetSocketId);
+            socket.emit('sendIceCandidate', {
+              roomId: currentRoom,
+              candidate: data,
+              from: user?._id,
+              to: targetSocketId
+            });
+          }
+        });
+        
+        // Handle peer connection establishing
+        peer.on('connect', () => {
+          console.log('Peer connection established');
+          setConnectionStatus('connected');
+          clearTimeout(failureTimeout);
+        });
+        
+        // Handle remote stream
+        peer.on('stream', (remoteMediaStream) => {
+          console.log('Received remote stream');
+          setRemoteStream(remoteMediaStream);
+          setConnectionStatus('connected');
+          clearTimeout(failureTimeout);
+        });
+        
+        // Handle peer errors
+        peer.on('error', (err) => {
+          console.error('Peer connection error:', err);
+          setConnectionStatus('failed');
+          clearTimeout(failureTimeout);
+        });
+        
+        // Handle peer connection closed
+        peer.on('close', () => {
+          console.log('Peer connection closed');
+          setConnectionStatus('disconnected');
+          setRemoteStream(null);
+          clearTimeout(failureTimeout);
+        });
+        
+        console.log('Emergency peer connection initialized');
+      } catch (error) {
+        console.error('Error in emergency peer connection:', error);
+        setConnectionStatus('failed');
       }
     }, 500);
     
-  }, [startCall, cleanupPeerConnection, initializeMediaStream]);
+  }, [socket, currentRoom, user?._id, cleanupPeerConnection, initializeMediaStream, connectionStatus]);
 
   // Handle incoming WebRTC offer
   const handleIncomingOffer = useCallback(async (offer: any, fromSocketId: string) => {
@@ -603,30 +838,26 @@ export const SocketProvider = ({ children }: ContextProps) => {
     if (localStreamRef.current) {
       const audioTracks = localStreamRef.current.getAudioTracks();
       if (audioTracks.length > 0) {
-        const newState = !isMicOn;
-        audioTracks.forEach(track => {
-          track.enabled = newState;
-        });
-        setIsMicOn(newState);
-        console.log(`Microphone turned ${newState ? 'on' : 'off'}`);
+        const track = audioTracks[0];
+        // For Safari, we need to use enabled property rather than stop/create new tracks
+        track.enabled = !track.enabled;
+        setIsMicOn(track.enabled);
       }
     }
-  }, [isMicOn]);
+  }, []);
 
   // Toggle video
   const toggleVideo = useCallback(() => {
     if (localStreamRef.current) {
       const videoTracks = localStreamRef.current.getVideoTracks();
       if (videoTracks.length > 0) {
-        const newState = !isVideoOn;
-        videoTracks.forEach(track => {
-          track.enabled = newState;
-        });
-        setIsVideoOn(newState);
-        console.log(`Video turned ${newState ? 'on' : 'off'}`);
+        const track = videoTracks[0];
+        // For Safari, we need to use enabled property rather than stop/create new tracks
+        track.enabled = !track.enabled;
+        setIsVideoOn(track.enabled);
       }
     }
-  }, [isVideoOn]);
+  }, []);
   
   // No automatic media stream initialization
   // We'll only initialize when joinRoom is called or when explicitly requested
@@ -666,9 +897,54 @@ export const SocketProvider = ({ children }: ContextProps) => {
 
   // Add this function implementation
   const prepareLocalMedia = useCallback(async () => {
-    console.log('Explicitly preparing local media');
-    return await initializeMediaStream();
-  }, [initializeMediaStream]);
+    try {
+      // Stop any existing tracks before requesting new ones (helps with Safari)
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      // Safari may need a clean request each time
+      const constraints = {
+        audio: true,
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: 'user'
+        }
+      };
+      
+      console.log('Requesting media with constraints:', constraints);
+      
+      // For Safari, use the promise-based approach explicitly
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      console.log('Media access granted:', stream.getTracks().map(t => t.kind).join(', '));
+      
+      // Store the stream in our ref and state
+      localStreamRef.current = stream;
+      setLocalStream(stream);
+      
+      // Set initial state for audio/video based on tracks
+      const videoTrack = stream.getVideoTracks()[0];
+      const audioTrack = stream.getAudioTracks()[0];
+      
+      if (videoTrack) {
+        setIsVideoOn(videoTrack.enabled);
+      }
+      
+      if (audioTrack) {
+        setIsMicOn(audioTrack.enabled);
+      }
+      
+      // Store the stream in window for easier debugging
+      window.localMediaStream = stream;
+      
+      return stream;
+    } catch (err) {
+      console.error('Error accessing media devices:', err);
+      throw err;
+    }
+  }, []);
 
   // Add cleanup for media when socket provider unmounts
   useEffect(() => {

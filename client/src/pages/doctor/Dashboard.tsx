@@ -338,7 +338,7 @@ const DoctorDashboard = () => {
               <div className="text-sm">
                 {nextAppointment && (
                   <Link
-                    to={`/video-call/${nextAppointment._id}`}
+                    to={`/vc/`}
                     className="font-medium text-primary-600 hover:text-primary-500"
                   >
                     Join when ready
@@ -462,7 +462,7 @@ const DoctorDashboard = () => {
                             {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
                           </span>
                           <Link
-                            to={`/video-call/${appointment._id}`}
+                            to={`/vc/`}
                             className="ml-2 text-primary-600 hover:text-primary-900 text-sm font-medium"
                           >
                             Join Call

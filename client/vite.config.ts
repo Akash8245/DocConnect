@@ -8,7 +8,7 @@ export default defineConfig({
     global: 'window', // Polyfill for 'global' variable used by simple-peer
   },
   server: {
-    port: 5173,
+    port: 5174,
     host: '0.0.0.0', // Allow access from local network devices
     proxy: {
       '/api': {
