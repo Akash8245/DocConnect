@@ -34,6 +34,7 @@ const authRoutes = require('./routes/auth.routes');
 const doctorRoutes = require('./routes/doctor.routes');
 const appointmentRoutes = require('./routes/appointment.routes');
 const aiRoutes = require('./routes/ai.routes');
+const prescriptionRoutes = require('./routes/prescription.routes');
 
 // Debug middleware for auth requests
 app.use('/api/auth', (req, res, next) => {
@@ -72,6 +73,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
 
 // --------- VC Route (Frontend page) ---------
 app.get('/vc', (req, res) => {

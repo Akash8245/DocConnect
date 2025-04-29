@@ -21,6 +21,10 @@ const DoctorProfile = lazy(() => import('./pages/doctor/Profile'));
 const DoctorAvailability = lazy(() => import('./pages/doctor/Availability'));
 const BookAppointmentPage = lazy(() => import('./pages/patient/BookAppointment'));
 const AIHealthAssistant = lazy(() => import('./pages/AIHealthAssistant'));
+const PatientPrescriptions = lazy(() => import('./pages/patient/Prescriptions'));
+const PatientPrescriptionDetail = lazy(() => import('./pages/patient/PrescriptionDetail'));
+const DoctorPrescriptions = lazy(() => import('./pages/doctor/Prescriptions'));
+const DoctorPrescriptionDetail = lazy(() => import('./pages/doctor/PrescriptionDetail'));
 
 // 👉 Lazy load your VideoCall page
 const VideoCall = lazy(() => import('./pages/VideoCall'));  // <<---- Added this line
@@ -128,6 +132,16 @@ const AppRouter = () => {
               <PatientProfile />
             </ProtectedRoute>
           } />
+          <Route path="patient/prescriptions" element={
+            <ProtectedRoute requiredRole="patient">
+              <PatientPrescriptions />
+            </ProtectedRoute>
+          } />
+          <Route path="patient/prescriptions/:id" element={
+            <ProtectedRoute requiredRole="patient">
+              <PatientPrescriptionDetail />
+            </ProtectedRoute>
+          } />
 
           {/* Doctor routes */}
           <Route path="doctor/dashboard" element={
@@ -148,6 +162,16 @@ const AppRouter = () => {
           <Route path="doctor/availability" element={
             <ProtectedRoute requiredRole="doctor">
               <DoctorAvailability />
+            </ProtectedRoute>
+          } />
+          <Route path="doctor/prescriptions" element={
+            <ProtectedRoute requiredRole="doctor">
+              <DoctorPrescriptions />
+            </ProtectedRoute>
+          } />
+          <Route path="doctor/prescriptions/:id" element={
+            <ProtectedRoute requiredRole="doctor">
+              <DoctorPrescriptionDetail />
             </ProtectedRoute>
           } />
 

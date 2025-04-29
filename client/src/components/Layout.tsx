@@ -12,6 +12,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   SparklesIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 
 const Layout = () => {
@@ -35,6 +36,7 @@ const Layout = () => {
         { name: 'Dashboard', href: '/patient/dashboard', icon: HomeIcon },
         { name: 'Find Doctors', href: '/patient/booking', icon: ClockIcon },
         { name: 'My Appointments', href: '/patient/appointments', icon: CalendarIcon },
+        { name: 'Prescriptions', href: '/patient/prescriptions', icon: DocumentTextIcon },
         { name: 'My Profile', href: '/patient/profile', icon: UserIcon },
       ];
     } else {
@@ -42,6 +44,7 @@ const Layout = () => {
         { name: 'Dashboard', href: '/doctor/dashboard', icon: HomeIcon },
         { name: 'My Availability', href: '/doctor/availability', icon: ClockIcon },
         { name: 'Appointments', href: '/doctor/appointments', icon: CalendarIcon },
+        { name: 'Prescriptions', href: '/doctor/prescriptions', icon: DocumentTextIcon },
         { name: 'My Profile', href: '/doctor/profile', icon: UserIcon },
       ];
     }

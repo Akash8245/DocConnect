@@ -7,7 +7,8 @@ import {
   VideoCameraIcon, 
   ClockIcon, 
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 interface Patient {
@@ -277,7 +278,7 @@ const DoctorDashboard = () => {
         </h1>
         
         {/* Dashboard summary */}
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
@@ -309,7 +310,7 @@ const DoctorDashboard = () => {
               </div>
             </div>
           </div>
-
+          
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
@@ -319,15 +320,13 @@ const DoctorDashboard = () => {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-secondary-500 truncate">
-                      Next Video Consultation
+                      Next Consultation
                     </dt>
                     <dd>
                       <div className="text-lg font-medium text-secondary-900">
-                        {nextAppointment ? (
-                          `${formatTime(nextAppointment.startTime)} with ${nextAppointment.patient.name}`
-                        ) : (
-                          'No upcoming calls'
-                        )}
+                        {nextAppointment 
+                          ? `${formatDate(nextAppointment.date)} at ${formatTime(nextAppointment.startTime)}`
+                          : 'No upcoming calls'}
                       </div>
                     </dd>
                   </dl>
@@ -352,12 +351,44 @@ const DoctorDashboard = () => {
             <div className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
+                  <DocumentTextIcon className="h-6 w-6 text-primary-600" aria-hidden="true" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-secondary-500 truncate">
+                      Prescription Requests
+                    </dt>
+                    <dd>
+                      <div className="text-lg font-medium text-secondary-900">
+                        Manage prescriptions
+                      </div>
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+            <div className="bg-secondary-50 px-5 py-3">
+              <div className="text-sm">
+                <Link
+                  to="/doctor/prescriptions"
+                  className="font-medium text-primary-600 hover:text-primary-500"
+                >
+                  View requests
+                </Link>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
                   <ClockIcon className="h-6 w-6 text-primary-600" aria-hidden="true" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-secondary-500 truncate">
-                      Pending Requests
+                      Appointment Requests
                     </dt>
                     <dd>
                       <div className="text-lg font-medium text-secondary-900">
@@ -371,10 +402,10 @@ const DoctorDashboard = () => {
             <div className="bg-secondary-50 px-5 py-3">
               <div className="text-sm">
                 <Link
-                  to="/doctor/availability"
+                  to="/doctor/appointments"
                   className="font-medium text-primary-600 hover:text-primary-500"
                 >
-                  Manage availability
+                  Review requests
                 </Link>
               </div>
             </div>
