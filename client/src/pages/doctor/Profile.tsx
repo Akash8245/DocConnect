@@ -214,63 +214,150 @@ const Profile = () => {
       setUploadingImage(true);
       setError('');
       
-      // Create FormData object to send file
-      const formData = new FormData();
-      formData.append('profilePicture', file);
-      
-      // In a real implementation, you would upload the file to your server
-      // For this demo, we'll simulate a delay and use FileReader to get a data URL
-      
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const imageDataUrl = event.target?.result as string;
-        
-        // Update profile state with new image
-        setProfile(prev => ({
-          ...prev,
-          profilePicture: imageDataUrl
-        }));
-        
-        // Simulate API upload delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        setUploadingImage(false);
+      // Create a function to resize the image
+      const resizeImage = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          // Create a FileReader to read the file
+          const reader = new FileReader();
+          
+          // Set up the FileReader onload callback
+          reader.onload = (event) => {
+            // Create an Image object to use for resizing
+            const img = new Image();
+            
+            // Set up the image onload callback
+            img.onload = () => {
+              // Create a canvas element
+              const canvas = document.createElement('canvas');
+              
+              // Set the canvas dimensions to the resized dimensions
+              // Target max dimensions of 400x400 pixels which is good for profile pictures
+              let width = img.width;
+              let height = img.height;
+              const MAX_WIDTH = 400;
+              const MAX_HEIGHT = 400;
+              
+              // Resize the image while maintaining aspect ratio
+              if (width > height) {
+                if (width > MAX_WIDTH) {
+                  height = Math.round(height * (MAX_WIDTH / width));
+                  width = MAX_WIDTH;
+                }
+              } else {
+                if (height > MAX_HEIGHT) {
+                  width = Math.round(width * (MAX_HEIGHT / height));
+                  height = MAX_HEIGHT;
+                }
+              }
+              
+              // Set canvas dimensions
+              canvas.width = width;
+              canvas.height = height;
+              
+              // Get the canvas context and draw the resized image
+              const ctx = canvas.getContext('2d');
+              if (!ctx) {
+                reject(new Error('Could not get canvas context'));
+                return;
+              }
+              
+              // Draw the image on the canvas
+              ctx.drawImage(img, 0, 0, width, height);
+              
+              // Get the data URL from the canvas (with reduced quality for JPEG)
+              // Use a lower quality setting (0.7 or 70%) to reduce file size
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+              
+              resolve(dataUrl);
+            };
+            
+            // Set up the image onerror callback
+            img.onerror = () => {
+              reject(new Error('Failed to load image'));
+            };
+            
+            // Set the image source to the file reader result
+            img.src = event.target?.result as string;
+          };
+          
+          // Set up the FileReader onerror callback
+          reader.onerror = () => {
+            reject(new Error('Failed to read file'));
+          };
+          
+          // Read the file as a data URL
+          reader.readAsDataURL(file);
+        });
       };
       
-      reader.readAsDataURL(file);
+      // Resize and compress the image
+      const resizedImageData = await resizeImage(file);
       
-      // In a real implementation, you would make an API call like this:
-      /*
+      // Configure axios for API call
       const config = {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'application/json'
         }
       };
       
-      const response = await axios.post('/api/auth/upload-profile-picture', formData, config);
+      // Create the profile update object with the resized image
+      const profileUpdate = {
+        ...profile,
+        profilePicture: resizedImageData
+      };
       
-      if (response.data && response.data.profilePicture) {
-        setProfile(prev => ({
-          ...prev,
-          profilePicture: response.data.profilePicture
-        }));
+      console.log("Image size after compression: " + Math.round(resizedImageData.length/1024) + "KB");
+      
+      // Send to server
+      try {
+        const response = await axios.put('/api/auth/profile', profileUpdate, config);
         
-        // Update global user context
-        if (updateUser) {
-          updateUser({
-            ...user,
-            profilePicture: response.data.profilePicture
-          });
+        if (response.data) {
+          // Update profile state with new image
+          setProfile(prev => ({
+            ...prev,
+            profilePicture: response.data.profilePicture || resizedImageData
+          }));
+          
+          // Update global user context
+          if (updateUser) {
+            updateUser({
+              ...user,
+              profilePicture: response.data.profilePicture || resizedImageData
+            });
+          }
+          
+          setSuccessMessage('Profile picture updated successfully!');
+          
+          // Clear success message after 3 seconds
+          setTimeout(() => {
+            setSuccessMessage('');
+          }, 3000);
         }
+      } catch (error: any) {
+        console.error('Error uploading profile picture:', error);
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          console.error('Response data:', error.response.data);
+          console.error('Response status:', error.response.status);
+          setError(`Failed to upload profile picture: ${error.response.data.message || 'Server error'}`);
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error('No response received:', error.request);
+          setError('Failed to upload profile picture: No response from server');
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          console.error('Error message:', error.message);
+          setError(`Failed to upload profile picture: ${error.message}`);
+        }
+      } finally {
+        setUploadingImage(false);
       }
-      
-      setUploadingImage(false);
-      */
-      
-    } catch (error) {
-      console.error('Error uploading profile picture:', error);
-      setError('Failed to upload profile picture. Please try again.');
+    } catch (error: any) {
+      console.error('Error handling profile picture:', error);
+      setError(`Failed to process profile picture: ${error.message}`);
       setUploadingImage(false);
     }
   };
