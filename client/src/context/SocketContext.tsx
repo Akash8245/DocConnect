@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import io, { Socket } from 'socket.io-client';
 import Peer from 'simple-peer';
+import axios from 'axios';
 import { useAuth } from './AuthContext';
 
 // Add global declaration for window.localMediaStream
@@ -63,7 +64,22 @@ export const SocketProvider = ({ children }: ContextProps) => {
   // Initialize socket connection
   useEffect(() => {
     console.log('Initializing socket connection');
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    
+    // Get the API base URL from axios defaults or environment variable
+    let apiUrl = axios.defaults.baseURL;
+    
+    // If no baseURL is set, try to get it from env or use localhost
+    if (!apiUrl) {
+      const envUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+      if (envUrl) {
+        // Ensure the URL has a protocol
+        apiUrl = envUrl.match(/^https?:\/\//) ? envUrl : `http://${envUrl}`;
+      } else {
+        // Fallback to localhost for development
+        apiUrl = 'http://localhost:5001';
+      }
+    }
+    
     console.log('Socket connecting to:', apiUrl);
     
     try {
@@ -72,6 +88,7 @@ export const SocketProvider = ({ children }: ContextProps) => {
         withCredentials: true,
         reconnection: true,
         reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
         timeout: 10000
       });
 

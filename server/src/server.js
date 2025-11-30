@@ -18,18 +18,89 @@ dotenv.config();
 // Initialize express app
 const app = express();
 const server = http.createServer(app);
+// Socket.io CORS configuration
+const socketOrigins = process.env.CLIENT_URL 
+  ? process.env.CLIENT_URL.split(',').map(url => url.trim())
+  : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
+if (process.env.VERCEL_URL) {
+  socketOrigins.push(`https://${process.env.VERCEL_URL}`);
+}
+
+if (process.env.FRONTEND_URL) {
+  socketOrigins.push(process.env.FRONTEND_URL);
+}
+
+// Add known Vercel frontend
+socketOrigins.push('https://doc-connect-24.vercel.app');
+
 const io = socketIO(server, {
   cors: {
-    origin: "*", // Allow all origins while in development
-    methods: ['GET', 'POST']
+    origin: process.env.NODE_ENV === 'production' ? socketOrigins : "*",
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
 // Middleware
 app.use(express.json());
+
+// CORS configuration - allow frontend origins from environment or default to localhost
+const allowedOrigins = process.env.CLIENT_URL 
+  ? process.env.CLIENT_URL.split(',').map(url => url.trim())
+  : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'];
+
+// Add Vercel frontend URL if provided
+if (process.env.VERCEL_URL) {
+  allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
+}
+
+// Also allow common Vercel patterns and specific known frontend URLs
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
+// Allow common Vercel domain patterns
+allowedOrigins.push('https://doc-connect-24.vercel.app');
+allowedOrigins.push('https://*.vercel.app');
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // In development, allow all origins
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    // Check if origin matches any allowed origin
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed.includes('*')) {
+        // Handle wildcard patterns like *.vercel.app
+        const pattern = allowed.replace('*', '');
+        return origin.includes(pattern);
+      }
+      return origin === allowed;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      // Check if it's a vercel.app domain (for production flexibility)
+      if (origin.includes('vercel.app')) {
+        console.log('Allowing Vercel origin:', origin);
+        return callback(null, true);
+      }
+      
+      console.log('CORS blocked origin:', origin);
+      console.log('Allowed origins:', allowedOrigins);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Debug middleware for auth requests
