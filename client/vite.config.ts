@@ -12,7 +12,7 @@ export default defineConfig({
     host: '0.0.0.0', // Allow access from local network devices
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path,
@@ -72,7 +72,7 @@ export default defineConfig({
         }
       },
       '/socket.io': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
         ws: true

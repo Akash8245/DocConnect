@@ -17,7 +17,13 @@ axios.defaults.headers.common['Content-Type'] = 'application/json';
 // Allow deployments to provide a backend URL via env variable
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 if (apiBaseUrl) {
-  axios.defaults.baseURL = apiBaseUrl.replace(/\/$/, '');
+  // Ensure the URL has a protocol
+  let baseURL = apiBaseUrl.replace(/\/$/, '');
+  if (!baseURL.match(/^https?:\/\//)) {
+    // If no protocol is provided, default to http://
+    baseURL = `http://${baseURL}`;
+  }
+  axios.defaults.baseURL = baseURL;
   console.log(`Using API base URL from env: ${axios.defaults.baseURL}`);
 } else {
   console.log('No VITE_API_BASE_URL provided, falling back to Vite proxy');
@@ -72,7 +78,9 @@ axios.interceptors.response.use(
       status: error.response?.status,
       url: error.config?.url,
       method: error.config?.method,
-      data: error.response?.data ? JSON.stringify(error.response.data).substring(0, 100) : 'No data'
+      data: error.response?.data ? JSON.stringify(error.response.data) : 'No response data',
+      message: error.response?.data?.message || error.message,
+      fullError: error
     });
     return Promise.reject(error);
   }

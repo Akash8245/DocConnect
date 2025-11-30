@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, User } from '../context/AuthContext';
-import { FaUser, FaLock, FaEnvelope, FaIdCard, FaUserMd, FaUserNurse } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
+import { FaLock, FaEnvelope, FaIdCard, FaUserMd, FaUserNurse } from 'react-icons/fa';
 
 const Signup: React.FC = () => {
   const [name, setName] = useState('');

@@ -1,12 +1,8 @@
-import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 
 const VideoCall = () => {
-  const { appointmentId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   // 100ms.live meeting URL
   const meetingUrl = 'https://m-videoconf-010.app.100ms.live/meeting/bsp-gssd-tmi';

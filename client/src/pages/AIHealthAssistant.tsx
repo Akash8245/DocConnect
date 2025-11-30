@@ -6,7 +6,6 @@ import {
   XMarkIcon,
   SparklesIcon,
 } from '@heroicons/react/24/solid';
-import { useAuth } from '../context/AuthContext';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 
@@ -33,7 +32,6 @@ const cleanAIResponse = (text: string): string => {
 };
 
 const AIHealthAssistant = () => {
-  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',

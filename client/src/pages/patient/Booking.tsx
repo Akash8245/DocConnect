@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { 
   MagnifyingGlassIcon, 
@@ -41,7 +40,6 @@ const specializations = [
 
 const BookingPage = () => {
   const { doctorId } = useParams<{ doctorId?: string }>();
-  const { user } = useAuth();
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
 
@@ -61,6 +59,8 @@ const BookingPage = () => {
   // State for booking
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
+  // @ts-ignore - error is set but not displayed in UI yet
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState('');
   const [bookingStep, setBookingStep] = useState(1);
   
@@ -152,7 +152,7 @@ const BookingPage = () => {
       setLoading(true);
       
       // Generate next 7 days for date options
-      const dates = [];
+      const dates: string[] = [];
       const today = new Date();
       
       for (let i = 1; i <= 7; i++) {
@@ -186,12 +186,12 @@ const BookingPage = () => {
         
         // Process availability data
         const firstDateAvailability = availabilityRes.data.find(
-          (a: any) => a.date.split('T')[0] === dates[0]
+          (a: { date: string; slots: Array<{ _id?: string; startTime: string; endTime: string; isBooked: boolean }> }) => a.date.split('T')[0] === dates[0]
         );
         
         if (firstDateAvailability) {
           // Map API data to our slot format
-          const mappedSlots = firstDateAvailability.slots.map((slot: any) => ({
+          const mappedSlots = firstDateAvailability.slots.map((slot: { _id?: string; startTime: string; endTime: string; isBooked: boolean }) => ({
             _id: slot._id || `slot_${dates[0]}_${slot.startTime}`,
             date: dates[0],
             startTime: slot.startTime,

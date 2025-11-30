@@ -397,8 +397,7 @@ export const SocketProvider = ({ children }: ContextProps) => {
               credential: 'openrelay',
             },
           ],
-          iceTransportPolicy: 'all',
-          sdpSemantics: 'unified-plan'
+          iceTransportPolicy: 'all'
         },
         sdpTransform: (sdp) => {
           console.log('Transforming SDP for better same-device compatibility');
@@ -523,19 +522,23 @@ export const SocketProvider = ({ children }: ContextProps) => {
     
   }, [startCall, cleanupPeerConnection, initializeMediaStream]);
 
-  // Handle incoming WebRTC offer
-  const handleIncomingOffer = useCallback(async (offer: any, fromSocketId: string) => {
-    console.log('Handling incoming offer from:', fromSocketId);
+  // Handle incoming WebRTC offer (unused but kept for future use)
+  // @ts-ignore - Unused but kept for future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleIncomingOffer = useCallback(async (_offer: any, _fromSocketId: string) => {
+    // This function is kept for future use but currently not called
+    // This function is kept for future use but currently not called
+    // console.log('Handling incoming offer from:', _fromSocketId);
     
     // Wait a moment to ensure streams are initialized
     setTimeout(() => {
-      startCall(fromSocketId, false);
+      startCall(_fromSocketId, false);
       
       // Signal the offer after a short delay to ensure the peer is ready
       setTimeout(() => {
         if (peerRef.current) {
           try {
-            peerRef.current.signal(offer);
+            peerRef.current.signal(_offer);
           } catch (error) {
             console.error('Error signaling offer to peer:', error);
             setConnectionStatus('failed');

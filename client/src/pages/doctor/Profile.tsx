@@ -12,13 +12,8 @@ import {
   XCircleIcon,
   CheckCircleIcon,
   CameraIcon,
-  CalendarDaysIcon,
   MapPinIcon,
-  LanguageIcon,
-  CurrencyDollarIcon,
-  BuildingOfficeIcon,
-  TrophyIcon,
-  DocumentTextIcon
+  TrophyIcon
 } from '@heroicons/react/24/outline';
 
 interface DoctorProfile {
@@ -42,7 +37,10 @@ interface DoctorProfile {
 }
 
 const Profile = () => {
-  const { user, token, updateUser } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const user = authContext?.user;
+  const token = authContext?.token;
+  const updateUser = authContext?.updateUser;
   const [profile, setProfile] = useState<DoctorProfile>({
     name: user?.name || '',
     email: user?.email || '',
@@ -146,9 +144,10 @@ const Profile = () => {
       
       if (response.data) {
         // Update the global user context if available
-        if (updateUser) {
+        if (updateUser && user && (user.id || user._id)) {
           updateUser({
             ...user,
+            id: user.id || user._id!,
             name: response.data.name,
             email: response.data.email,
             specialization: response.data.specialization,

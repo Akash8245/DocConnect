@@ -15,14 +15,16 @@ import {
 } from '@heroicons/react/24/outline';
 
 const Layout = () => {
-  const { user, logout } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const user = authContext?.user;
+  const logout = authContext?.logout;
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    logout();
+    logout?.();
     navigate('/login');
   };
 

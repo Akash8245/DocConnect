@@ -233,17 +233,18 @@ const DoctorDashboard = () => {
   }
 
   // Show a fallback message if data couldn't be loaded but the request didn't completely fail
-  const noAppointmentsMessage = (
-    <div className="bg-gray-50 p-6 rounded-lg shadow-sm text-center">
-      <p className="text-gray-500">No appointments found.</p>
-      <p className="text-gray-400 text-sm mt-2">
-        Set your availability and patients will be able to book appointments with you.
-      </p>
-      <Link to="/doctor/availability" className="mt-4 inline-block text-blue-600 hover:text-blue-800">
-        Set your availability →
-      </Link>
-    </div>
-  );
+  // (Currently unused but kept for future use)
+  // const noAppointmentsMessage = (
+  //   <div className="bg-gray-50 p-6 rounded-lg shadow-sm text-center">
+  //     <p className="text-gray-500">No appointments found.</p>
+  //     <p className="text-gray-400 text-sm mt-2">
+  //       Set your availability and patients will be able to book appointments with you.
+  //     </p>
+  //     <Link to="/doctor/availability" className="mt-4 inline-block text-blue-600 hover:text-blue-800">
+  //       Set your availability →
+  //     </Link>
+  //   </div>
+  // );
 
   if (error) {
     return (

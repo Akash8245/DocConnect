@@ -56,14 +56,15 @@ export const createPeerConnection = (options: PeerOptions): any => {
     initiator: options.initiator,
     trickle: true, // Enable ICE trickle for faster connection
     stream: options.stream,
-    config: options.config || iceServers,
-    reconnectTimer: 1000,
-    iceTransportPolicy: 'all',
-    sdpTransform: (sdp) => {
+    config: {
+      ...(options.config || iceServers),
+      iceTransportPolicy: 'all'
+    },
+    sdpTransform: (sdp: string) => {
       // Add high bitrate for better video quality (optional)
       return sdp.replace('b=AS:30', 'b=AS:1000');
     },
-  });
+  } as any);
 };
 
 export default Peer; 

@@ -163,18 +163,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
     
     try {
-      console.log("Attempting signup with:", { email: data.email, role: data.role });
+      console.log("Attempting signup with:", { email: data.email, role: data.role, name: data.name });
       
       if (!data.role || (data.role !== 'patient' && data.role !== 'doctor')) {
         throw new Error('Invalid role selected. Please choose either patient or doctor.');
       }
       
-      const response = await axios.post(`/api/auth/signup/${data.role}`, {
+      if (!data.name || !data.email || !data.password) {
+        throw new Error('Please fill in all required fields.');
+      }
+      
+      const signupData = {
         name: data.name,
         email: data.email,
         password: data.password,
         ...(data.role === 'doctor' && data.specialization ? { specialization: data.specialization } : {})
-      });
+      };
+      
+      console.log("Sending signup request to:", `/api/auth/signup/${data.role}`, signupData);
+      
+      const response = await axios.post(`/api/auth/signup/${data.role}`, signupData);
       
       if (response.data.token) {
         const token = response.data.token;
@@ -203,8 +211,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (error: any) {
       console.error("Signup error:", error);
-      const serverMessage = error.response?.data?.message || 
-        (error.request ? 'Server is unavailable. Please check your connection.' : 'Registration failed. Please try again.');
+      console.error("Signup error response:", error.response?.data);
+      console.error("Signup error status:", error.response?.status);
+      console.error("Signup error request:", error.request);
+      
+      let serverMessage = 'Registration failed. Please try again.';
+      
+      if (error.response) {
+        // Server responded with error
+        serverMessage = error.response.data?.message || 
+          error.response.data?.error || 
+          `Server error: ${error.response.status}`;
+      } else if (error.request) {
+        // Request made but no response
+        serverMessage = 'Server is unavailable. Please check your connection.';
+      } else {
+        // Other errors
+        serverMessage = error.message || 'Registration failed. Please try again.';
+      }
+      
       setError(serverMessage);
       throw new Error(serverMessage);
     } finally {

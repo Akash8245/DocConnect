@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, User } from '../context/AuthContext';
-import { FaUser, FaLock, FaUserMd } from 'react-icons/fa';
+import { useAuth } from '../context/AuthContext';
+import { FaUser, FaLock } from 'react-icons/fa';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -42,7 +42,7 @@ const Login: React.FC = () => {
     
     try {
       setIsLoading(true);
-      setError(null);
+      setError('');
       
       await login(email, password);
       

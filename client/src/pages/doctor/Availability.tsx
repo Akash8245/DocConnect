@@ -2,7 +2,6 @@ import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import axios from 'axios';
 import { 
-  CalendarIcon, 
   ClockIcon, 
   PlusCircleIcon,
   TrashIcon,
@@ -129,16 +128,16 @@ const Availability = () => {
           if (Array.isArray(response.data)) {
             console.log('Processing availability data arrays:', response.data.length, 'days');
             
-            response.data.forEach(dayAvailability => {
+            response.data.forEach((dayAvailability: { date: string; slots?: Array<{ _id?: string; startTime: string; endTime: string; isBooked?: boolean }> }) => {
               if (dayAvailability.slots && Array.isArray(dayAvailability.slots)) {
-                dayAvailability.slots.forEach(slot => {
+                dayAvailability.slots.forEach((slot: { _id?: string; startTime: string; endTime: string; isBooked?: boolean }) => {
                   transformedSlots.push({
                     _id: slot._id || `temp-${Date.now()}-${Math.random()}`,
                     date: new Date(dayAvailability.date).toISOString().split('T')[0],
                     startTime: slot.startTime,
                     endTime: slot.endTime,
                     // Default to 'both' since the backend doesn't have sessionType yet
-                    sessionType: 'both',
+                    sessionType: 'both' as const,
                     isBooked: slot.isBooked || false
                   });
                 });
@@ -155,20 +154,20 @@ const Availability = () => {
               date: today,
               startTime: '09:00',
               endTime: '10:00',
-              sessionType: 'both',
+              sessionType: 'both' as const,
               isBooked: false
             }, {
               _id: `demo-2`,
               date: today,
               startTime: '14:00',
               endTime: '15:00',
-              sessionType: 'both',
+              sessionType: 'both' as const,
               isBooked: false
             });
           }
           
           console.log('Transformed availability slots:', transformedSlots.length, 'slots');
-          setAvailabilitySlots(transformedSlots);
+          setAvailabilitySlots(transformedSlots as AvailabilitySlot[]);
         } catch (err) {
           console.error('Error fetching availability from API:', err);
           

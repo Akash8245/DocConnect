@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
 import axios from 'axios';
-import { useContext } from 'react';
 import { 
   CalendarIcon,
   VideoCameraIcon,
@@ -33,7 +31,6 @@ interface Appointment {
 // Simple Appointments component with fixed loading issue
 const Appointments = () => {
   // State variables
-  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
@@ -75,8 +72,13 @@ const Appointments = () => {
         
         // Process the response
         if (response.data && Array.isArray(response.data)) {
-          // Sort appointments by date
-          const sortedData = [...response.data].sort((a, b) => 
+          // Sort appointments by date and ensure proper typing
+          const sortedData: Appointment[] = [...response.data].map((app: any) => ({
+            ...app,
+            status: (app.status === 'pending' || app.status === 'confirmed' || app.status === 'cancelled' || app.status === 'completed') 
+              ? app.status 
+              : 'pending' as const
+          })).sort((a, b) => 
             new Date(b.date).getTime() - new Date(a.date).getTime()
           );
           
@@ -166,14 +168,14 @@ const Appointments = () => {
       });
       
       // Update both state arrays simultaneously
-      const updateAppointment = (list: Appointment[]) => 
+      const updateAppointment = (list: Appointment[]): Appointment[] => 
         list.map(app => app._id === appointmentId 
-          ? { ...app, status: 'cancelled' } 
+          ? { ...app, status: 'cancelled' as const } 
           : app
         );
       
-      setAppointments(updateAppointment);
-      setFilteredAppointments(updateAppointment);
+      setAppointments(prev => updateAppointment(prev));
+      setFilteredAppointments(prev => updateAppointment(prev));
       
       alert('Appointment cancelled successfully!');
     } catch (err: any) {

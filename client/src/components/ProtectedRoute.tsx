@@ -11,7 +11,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   role = 'any',
   children 
 }) => {
-  const { user, loading } = useContext(AuthContext);
+  const authContext = useContext(AuthContext);
+  const user = authContext?.user;
+  const loading = authContext?.loading ?? false;
   const location = useLocation();
 
   // Show loading indicator while checking authentication
